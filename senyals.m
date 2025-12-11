@@ -8,7 +8,7 @@ clc; clear; close all;
 %% 1. CONFIGURACIÓ I CÀRREGA DE DADES
 % ==========================================================
 % Canvia aquesta ruta per la del teu ordinador:
-datasetPath = 'C:\Users\max.estrade\Downloads\imatges_senyals'; 
+datasetPath = 'E:\MATLAB\MD_Senyals\imatges_senyals'; 
 
 disp('Carregant imatges...');
 imds = imageDatastore(datasetPath, ...

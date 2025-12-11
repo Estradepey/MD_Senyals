@@ -1,0 +1,18 @@
+# Archivos de sistema y temporales
+.DS_Store
+Thumbs.db
+
+# Archivos temporales de MATLAB (Autosaves)
+*.asv
+*.autosave
+
+# Carpeta de datos (¡Muy importante!)
+imatges_senyals/
+Dataset/
+*carpetas_con_fotos/
+
+# Archivos de proyecto grandes (opcional)
+*.slxc
+
+# Si el modelo .mat es gigante (>100MB), ignóralo también.
+# Si es pequeño (<50MB), puedes dejarlo.
