@@ -1,12 +1,3 @@
-% PROJECTE VISIÓ PER COMPUTADOR - DETECCIÓ DE SENYALS DE TRÀNSIT
-% Universitat Politècnica de Catalunya - FIB
-% Millores sobre descriptors de Fourier bàsics
-
-%% ============================================================================
-%% 1. CÀRREGA I PREPARACIÓ DEL DATASET
-%% ============================================================================
-clear; clc; close all;
-
 datasetPath = 'E:\MATLAB\MD_Senyals\imatges_senyals';
 imds = imageDatastore(datasetPath, ...
     'IncludeSubfolders', true, ...
@@ -20,13 +11,9 @@ fprintf('- Train: %d imatges\n', numel(imdsTrain.Files));
 fprintf('- Test: %d imatges\n', numel(imdsTest.Files));
 fprintf('- Classes: %d\n\n', numel(categories(imdsTrain.Labels)));
 
-%% ============================================================================
-%% 2. EXTRACCIÓ DE CARACTERÍSTIQUES - TRAIN
-%% ============================================================================
 
 % Configuració de característiques
 config.fourierDesc = 20;        % Descriptors de Fourier
-config.huMoments = 7;           % Moments de Hu
 config.colorBins = 15;          % Bins per histograma de color (HSV)
 config.shapeFeats = 6;          % Característiques de forma
 config.imgSize = 64;            % Mida normalitzada
@@ -39,9 +26,6 @@ fprintf('Extracting features from TRAIN set...\n');
 YTrain = imdsTrain.Labels(trainValid);
 fprintf('Train features: %d imatges vàlides de %d\n\n', sum(trainValid), numel(trainValid));
 
-%% ============================================================================
-%% 3. NORMALITZACIÓ I PREPARACIÓ
-%% ============================================================================
 
 % Normalitzar característiques (important!)
 % Usar normxcorr per evitar divisió per zero
@@ -60,13 +44,10 @@ YTrain = YTrain(validIdx);
 
 fprintf('Després de neteja: %d mostres d''entrenament\n\n', size(XTrain_norm, 1));
 
-%% ============================================================================
-%% 4. ENTRENAMENT DE CLASSIFICADORS
-%% ============================================================================
 
 fprintf('=== ENTRENAMENT DE MODELS ===\n');
 
-% 4.1 SVM amb validació creuada
+% SVM amb validació creuada
 fprintf('Entrenant SVM amb RBF kernel...\n');
 t = templateSVM('KernelFunction', 'rbf', 'KernelScale', 'auto', 'Standardize', true);
 mdl_svm = fitcecoc(XTrain_norm, YTrain, 'Learners', t, 'Coding', 'onevsall');
@@ -223,7 +204,7 @@ function [features, validMask] = extractFeatures(imds, config)
     % Extreu característiques de totes les imatges d'un imageDatastore
     
     numImages = numel(imds.Files);
-    numFeatures = config.fourierDesc + config.huMoments + ...
+    numFeatures = config.fourierDesc  + ...
                   config.colorBins * 3 + config.shapeFeats;
     
     features = zeros(numImages, numFeatures);
@@ -267,7 +248,7 @@ function feat = extractSingleFeature(img, config)
     bw = bwareaopen(bw, 30);
     
     % Inicialitzar vector de característiques
-    feat = zeros(1, config.fourierDesc + config.huMoments + ...
+    feat = zeros(1, config.fourierDesc  + ...
                  config.colorBins * 3 + config.shapeFeats);
     idx = 1;
     
@@ -291,10 +272,6 @@ function feat = extractSingleFeature(img, config)
     end
     idx = idx + config.fourierDesc;
     
-    %% 2. MOMENTS DE HU
-    hu = computeHuMoments(bw);
-    feat(idx:idx+config.huMoments-1) = hu;
-    idx = idx + config.huMoments;
     
     %% 3. HISTOGRAMES DE COLOR (HSV - millor per senyals)
     img_hsv = rgb2hsv(img);
@@ -321,53 +298,4 @@ function feat = extractSingleFeature(img, config)
         end
         feat(idx+5) = p.MajorAxisLength / config.imgSize;
     end
-end
-
-function hu = computeHuMoments(bw)
-    % Calcula els 7 moments invariants de Hu
-    
-    hu = zeros(1, 7);
-    
-    [y, x] = find(bw);
-    if isempty(x)
-        return;
-    end
-    
-    % Centroide
-    xc = mean(x);
-    yc = mean(y);
-    
-    % Moments centrals
-    mu20 = sum((x - xc).^2);
-    mu02 = sum((y - yc).^2);
-    mu11 = sum((x - xc).*(y - yc));
-    mu30 = sum((x - xc).^3);
-    mu03 = sum((y - yc).^3);
-    mu21 = sum((x - xc).^2.*(y - yc));
-    mu12 = sum((x - xc).*(y - yc).^2);
-    
-    % Normalitzar
-    n = length(x);
-    nu20 = mu20 / n^2;
-    nu02 = mu02 / n^2;
-    nu11 = mu11 / n^2;
-    nu30 = mu30 / n^2.5;
-    nu03 = mu03 / n^2.5;
-    nu21 = mu21 / n^2.5;
-    nu12 = mu12 / n^2.5;
-    
-    % Calcular moments de Hu
-    hu(1) = nu20 + nu02;
-    hu(2) = (nu20 - nu02)^2 + 4*nu11^2;
-    hu(3) = (nu30 - 3*nu12)^2 + (3*nu21 - nu03)^2;
-    hu(4) = (nu30 + nu12)^2 + (nu21 + nu03)^2;
-    hu(5) = (nu30 - 3*nu12)*(nu30 + nu12)*((nu30 + nu12)^2 - 3*(nu21 + nu03)^2) + ...
-            (3*nu21 - nu03)*(nu21 + nu03)*(3*(nu30 + nu12)^2 - (nu21 + nu03)^2);
-    hu(6) = (nu20 - nu02)*((nu30 + nu12)^2 - (nu21 + nu03)^2) + ...
-            4*nu11*(nu30 + nu12)*(nu21 + nu03);
-    hu(7) = (3*nu21 - nu03)*(nu30 + nu12)*((nu30 + nu12)^2 - 3*(nu21 + nu03)^2) - ...
-            (nu30 - 3*nu12)*(nu21 + nu03)*(3*(nu30 + nu12)^2 - (nu21 + nu03)^2);
-    
-    % Log per estabilitat
-    hu = -sign(hu) .* log10(abs(hu) + 1e-10);
 end
