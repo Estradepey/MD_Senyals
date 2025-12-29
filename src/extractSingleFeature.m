@@ -1,6 +1,11 @@
 function feat = extractSingleFeature(img, config)
-    %% 0. PRE-PROCESSAMENT
-    % Si la imatge ve en format 16 bits (0-65535), la passem a 8 bits (0-255)
+    %% 0. PRE-PROCESSAMENT & SAFETY CHECK
+    % Si el patching falló y envió una imagen vacía
+    if isempty(img)
+        feat = []; return;
+    end
+
+    % Si la imatge ve en format 16 bits (0-65535), la passem a 8 bits
     if isa(img, 'uint16')
         img = im2uint8(img);
     end

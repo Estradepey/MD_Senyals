@@ -1,64 +1,94 @@
-% APP DE DEMOSTRACIÓ - DETECCIÓ DE SENYALS
-% Carrega el model entrenat i prediu una imatge nova
+% APP DE DEMOSTRACIÓ - DETECCIÓ DE SENYALS EN ESCENA COMPLETA
+% 1. Detecta zones d'interès (segmentació + patching)
+% 2. Classifica cada zona (model ML)
 
 clear; clc; close all;
-addpath('src'); % Necessitem accés a extractSingleFeature
+addpath('src'); 
+
+warning('off', 'stats:pdist2:DataConversion');
 
 %% 1. CARREGAR EL CERVELL (MODEL)
 if ~isfile('model_entrenat.mat')
-    error('No trobo el fitxer "model_entrenat.mat". Executa primer el main.m!');
+    error('No trobo "model_entrenat.mat". Executa primer main.m!');
 end
-
 fprintf('Carregant model...\n');
-load('model_entrenat.mat'); % Carrega: finalModel, config, trainMu, trainSigma, bestModelName
+load('model_entrenat.mat'); % Variables: finalModel, config, trainMu, trainSigma, bestModelName
 
-%% 2. SELECCIONAR IMATGE
-[file, path] = uigetfile({'*.jpg;*.png;*.bmp;*.ppm', 'Imatges de Senyals'}, ...
-                         'Selecciona una senyal de trànsit');
-
-if isequal(file, 0)
-    disp('Operació cancel·lada per l''usuari.');
-    return;
-end
+%% 2. SELECCIONAR IMATGE (ESCENA COMPLETA)
+[file, path] = uigetfile({'*.jpg;*.png;*.jpeg', 'Imatges de Carrer'}, ...
+                         'Selecciona una foto de carrer');
+if isequal(file, 0), return; end
 
 fullPath = fullfile(path, file);
 img = imread(fullPath);
 
-%% 3. EXTRACCIÓ I PREDICCIÓ
-try
-    % A. Extreure característiques (igual que al training)
-    feat = extractSingleFeature(img, config);
-    
-    % B. Normalitzar (USANT LA MU/SIGMA DEL TRAINING!)
-    % Això és crucial: hem d'escalar les dades igual que com va aprendre el model
-    feat_norm = (feat - trainMu) ./ trainSigma;
-    
-    % C. Gestionar NaNs si n'hi ha (casos rars)
-    feat_norm(~isfinite(feat_norm)) = 0;
-    
-    % D. Predir
-    % La sintaxi pot variar lleugerament entre SVM/KNN i Random Forest
-    if contains(bestModelName, 'Random Forest')
-        prediction = predict(finalModel, feat_norm);
-        label = prediction{1}; % RF torna un cell array
-    else
-        label = predict(finalModel, feat_norm); % SVM/KNN tornen categorical/string
-        label = char(label);
-    end
-    
-    %% 4. MOSTRAR RESULTAT
-    figure('Name', 'Resultat de la Predicció', 'NumberTitle', 'off', 'Color', 'w');
-    
-    % Mostrar imatge
-    imshow(img);
-    
-    % Mostrar títol bonic
-    title({sprintf('MODEL: %s', bestModelName), ...
-           sprintf('PREDICCIÓ: \fontsize{16}\color{blue}%s', label)}, ...
-           'Interpreter', 'tex');
-       
-    fprintf('Imatge: %s\nPredicció: %s\n', file, label);
-    
-catch ME
-    errordlg(['Error processant la imatge: ' ME.message], 'Error');
+%% 3. FASE 1: ELS "ULLS" (Detecció i Patching)
+fprintf('Escanejant la imatge...\n');
+
+% Cridem a la nova funció que has creat
+[candidates, bboxes] = detectAndSegmentSigns(img, config);
+
+numCandidates = length(candidates);
+fprintf('S''han trobat %d possibles senyals.\n', numCandidates);
+
+%% 4. FASE 2: EL "CERVELL" (Classificació)
+
+% Preparem la visualització
+figure('Name', 'Resultat Final', 'Color', 'w');
+imshow(img); hold on;
+title(sprintf('Detecció amb %s', bestModelName));
+
+if numCandidates == 0
+    text(10, 20, 'CAP SENYAL TROBADA', 'Color', 'r', 'FontSize', 14, 'FontWeight', 'bold');
 end
+
+% Bucle per analitzar cada "patch" trobat
+for i = 1:numCandidates
+    patch = candidates{i};
+    box = bboxes(i, :); % Coordenades [x y w h]
+    
+    try
+        % A. Extreure característiques
+        feat = extractSingleFeature(patch, config);
+        
+        % B. Normalitzar (IMP: Usar mu/sigma del training)
+        feat_norm = (feat - trainMu) ./ trainSigma;
+        feat_norm = single(feat_norm);        feat_norm(~isfinite(feat_norm)) = 0; % Seguretat
+        
+% C. Predir con SCORES (Probabilidades)
+        [prediction, scores] = predict(finalModel, feat_norm);
+        
+        % Ordenar las puntuaciones de mayor a menor
+        sortedScores = sort(scores, 'descend');
+        topScore = sortedScores(1);
+        secondScore = sortedScores(2);
+        
+        % CRITERIO DE CONFIANZA:
+        % 1. Que la probabilidad sea decente 
+        % 2. Que haya diferencia con la segunda opción 
+
+        
+        % Si pasa el filtro, dibujamos...
+        label = string(prediction);
+        
+        if label == "fons" || label == "background" 
+            fprintf('  -> Objecte %d: Ignorat (Classificat com fons)\n', i);
+            continue; % Salta a la siguiente iteración del bucle
+        end
+
+        % D. DIBUIXAR RESULTAT
+        % Dibuixem el rectangle verd
+        rectangle('Position', box, 'EdgeColor', 'g', 'LineWidth', 3);
+        
+        % Posem l'etiqueta a sobre
+        text(box(1), box(2)-10, char(label), ...
+             'Color', 'yellow', 'FontSize', 10, 'FontWeight', 'bold', ...
+             'BackgroundColor', 'black');
+         
+fprintf('  -> Objecte %d: Classificat com "%s" (Confiança: %.2f%%)\n', ...
+                i, label, topScore*100);        
+    catch ME
+        warning('Error processant candidat %d: %s', i, ME.message);
+    end
+end
+hold off;
