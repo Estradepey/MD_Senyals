@@ -1,102 +1,89 @@
-function [patches, bboxes] = detectAndSegmentSigns(fullImage, config)
-    % detectAndSegmentSigns: Escanea una imagen completa buscando señales.
-    %
-    % INPUT:
-    %   - fullImage: Imagen original (RGB)
-    %   - config: Estructura de configuración (opcional, por si quieres pasar parámetros)
-    %
-    % OUTPUT:
-    %   - patches: Cell array con las imágenes recortadas candidatas
-    %   - bboxes: Matriz Nx4 con las coordenadas [x, y, w, h] de cada parche
+function [candidates, bboxes] = detectAndSegmentSigns(img, config)
+% DETECTANDSEGMENTSIGNS Detecta senyals usant Color (HSV) i Morfologia
+% Aquesta funció substitueix l'enfocament anterior per un més robust
+% per a càmeres de mòbil.
+
+    % 1. Pre-processament: Convertir a HSV
+    hsv = rgb2hsv(img);
+    h = hsv(:,:,1); 
+    s = hsv(:,:,2); 
+    v = hsv(:,:,3);
     
-    patches = {};
+    % 2. Màscares de Color (Vermell i Blau)
+    % Vermell (té un problema, està al principi i al final de l'espectre H)
+    maskRed1 = (h > 0.94) & (s > 0.45) & (v > 0.2);
+    maskRed2 = (h < 0.06) & (s > 0.45) & (v > 0.2);
+    maskRed = maskRed1 | maskRed2;
+    
+    % Blau (Senyals d'obligació)
+    maskBlue = (h > 0.55 & h < 0.75) & (s > 0.4) & (v > 0.25);
+    
+    % Unim màscares
+    maskTotal = maskRed | maskBlue;
+    
+    % 3. Neteja Morfològica
+    % Eliminar soroll petit
+    maskTotal = bwareaopen(maskTotal, 100); 
+    % Tancar forats i suavitzar formes
+    se = strel('disk', 3);
+    maskTotal = imclose(maskTotal, se);
+    maskTotal = imfill(maskTotal, 'holes');
+    
+    % 4. Extracció de regions (Regionprops)
+    stats = regionprops(maskTotal, 'BoundingBox', 'Area', 'Eccentricity', 'Solidity');
+    
+    candidates = {};
     bboxes = [];
     
-    % 1. VALIDACIÓN
-    if size(fullImage, 3) ~= 3
-        warning('La imagen no es RGB. No se puede segmentar por color.');
-        return;
-    end
-    
-    % 2. PRE-PROCESADO Y HSV
-    % Convertimos a HSV para ser inmunes a sombras/brillo
-    img_hsv = rgb2hsv(fullImage);
-    
-    % --- MÁSCARAS DE COLOR ---
-    
-    % ROJO: El rojo está en los dos extremos del Hue (0 y 1)
-    % Rango 1: 0.90 a 1.0
-    mask_r1 = (img_hsv(:,:,1) >= 0.90) & (img_hsv(:,:,1) <= 1.0);
-    % Rango 2: 0.00 a 0.10
-    mask_r2 = (img_hsv(:,:,1) >= 0.00) & (img_hsv(:,:,1) <= 0.10);
-    % Saturación alta (> 0.4) para evitar grises/blancos
-    mask_sat = (img_hsv(:,:,2) > 0.4);
-    mask_red = (mask_r1 | mask_r2) & mask_sat;
-    
-    % AZUL: Señales de obligación/informativas (Hue aprox 0.55 - 0.75)
-    mask_blue = (img_hsv(:,:,1) >= 0.55) & (img_hsv(:,:,1) <= 0.75) & (img_hsv(:,:,2) > 0.4);
-    
-    % Unir máscaras
-    binaryMask = mask_red | mask_blue;
-    
-    % 3. LIMPIEZA MORFOLÓGICA (Morphology)
-    % Eliminar ruido (píxeles sueltos)
-    binaryMask = bwareaopen(binaryMask, 30); 
-    % Dilatar para unir trozos rotos de la señal
-    binaryMask = imdilate(binaryMask, strel('disk', 2));
-    % Rellenar agujeros (el centro de la señal)
-    binaryMask = imfill(binaryMask, 'holes');
-    
-    % 4. EXTRACCIÓN DE PROPIEDADES
-    stats = regionprops(binaryMask, 'BoundingBox', 'Area', 'Eccentricity', 'Extent', 'Solidity');
-    
-    % 5. FILTRADO DE CANDIDATOS
-    imgArea = size(fullImage, 1) * size(fullImage, 2);
+    [imgH, imgW, ~] = size(img);
     
     for k = 1:length(stats)
-        bb = stats(k).BoundingBox; % [x, y, w, h]
-        w = bb(3);
-        h = bb(4);
+        box = stats(k).BoundingBox; % [x y w h]
         area = stats(k).Area;
+        eccentricity = stats(k).Eccentricity; 
+        solidity = stats(k).Solidity;
+        
+        w = box(3);
+        h = box(4);
         aspectRatio = w / h;
         
-        % --- REGLAS DE RECHAZO ---
-        
-        % A. Tamaño: Ni muy pequeño (ruido) ni gigante (cielo/suelo)
-        if area < 200 || area > (imgArea / 3)
-            continue; 
-        end
-        
-        % B. Forma: Las señales suelen ser cuadradas (1:1). 
-        % Aceptamos de 0.6 a 1.5 por perspectiva.
-        if aspectRatio < 0.6 || aspectRatio > 1.6
+        % --- FILTRES GEOMÈTRICS ---
+        % Mida mínima i màxima
+        if area < 400 || area > (imgH * imgW * 0.6)
             continue;
         end
         
-        % C. Solidez (Solidity): Proporción de píxeles dentro de la forma convexa
-        % Un cuadrado o círculo es muy sólido (>0.9). Una mancha irregular es baja.
-        if stats(k).Solidity < 0.85
-            continue; % Descartar formas raras
-        end
-    
-        % D. Extent (Opcional): Cuánto de la caja ocupa el objeto
-        % Un círculo dentro de un cuadrado ocupa pi/4 = 0.78. 
-        % Si ocupa menos de 0.5, es que hay mucho aire (posiblemente ruido).
-        if stats(k).Extent < 0.5
+        % Proporció (Aspect Ratio) - Els senyals són quadrats/cercles (aprox 1)
+        if aspectRatio < 0.5 || aspectRatio > 2.0
             continue;
         end
         
-        % SI PASA LOS FILTROS -> ES UN CANDIDATO
+        % Solidesa - Els senyals són sòlids, no formes estranyes
+        if solidity < 0.45
+            continue;
+        end
         
-        % Recortamos (Patching)
-        % Añadimos un pequeño margen (padding) si es posible para no cortar el borde
-        padding = 2;
-        rect = [bb(1)-padding, bb(2)-padding, bb(3)+2*padding, bb(4)+2*padding];
-        patch = imcrop(fullImage, rect);
+        % 5. Retall i Padding (Marge de seguretat)
+        padding = round(max(w, h) * 0.1); 
+        x1 = floor(max(1, box(1) - padding));
+        y1 = floor(max(1, box(2) - padding));
+        x2 = ceil(min(imgW, box(1) + w + padding));
+        y2 = ceil(min(imgH, box(2) + h + padding));
         
-        if ~isempty(patch)
-            patches{end+1} = patch; %#ok<AGROW>
-            bboxes = [bboxes; bb];   %#ok<AGROW>
+        % Retallem la imatge original
+        crop = img(y1:y2, x1:x2, :);
+        
+        % Redimensionem per al model
+        if isfield(config, 'imageSize')
+            targetSize = config.imageSize;
+        else
+            targetSize = [32 32];
+        end
+        
+        if ~isempty(crop)
+            cropResized = imresize(crop, targetSize(1:2));
+            candidates{end+1} = cropResized; %#ok<AGROW>
+            bboxes = [bboxes; [x1, y1, (x2-x1+1), (y2-y1+1)]]; %#ok<AGROW>
         end
     end
 end

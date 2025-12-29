@@ -7,7 +7,7 @@ addpath('src');
 
 warning('off', 'stats:pdist2:DataConversion');
 
-%% 1. CARREGAR EL CERVELL (MODEL)
+%% 1. CARREGAR MODEL
 if ~isfile('model_entrenat.mat')
     error('No trobo "model_entrenat.mat". Executa primer main.m!');
 end
@@ -22,16 +22,15 @@ if isequal(file, 0), return; end
 fullPath = fullfile(path, file);
 img = imread(fullPath);
 
-%% 3. FASE 1: ELS "ULLS" (Detecció i Patching)
+%% 3. FASE 1: Detecció i Patching
 fprintf('Escanejant la imatge...\n');
 
-% Cridem a la nova funció que has creat
 [candidates, bboxes] = detectAndSegmentSigns(img, config);
 
 numCandidates = length(candidates);
 fprintf('S''han trobat %d possibles senyals.\n', numCandidates);
 
-%% 4. FASE 2: EL "CERVELL" (Classificació)
+%% 4. FASE 2: Classificació
 
 % Preparem la visualització
 figure('Name', 'Resultat Final', 'Color', 'w');
@@ -66,6 +65,11 @@ for i = 1:numCandidates
         % CRITERIO DE CONFIANZA:
         % 1. Que la probabilidad sea decente 
         % 2. Que haya diferencia con la segunda opción 
+
+        if topScore < 0.4 || (topScore - secondScore) < 0.4
+            fprintf('  -> Objecte %d: NO CLASSIFICAT (Confiança: %.2f%%)\n', i, topScore*100);
+            continue; % Salta a la següent iteració del bucle
+        end
 
         
         % Si pasa el filtro, dibujamos...
