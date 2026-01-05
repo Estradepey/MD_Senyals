@@ -84,7 +84,7 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
         if isfield(config, 'imageSize')
             targetSize = config.imageSize;
         else
-            targetSize = [32 32];
+            targetSize = [64 64];
         end
         
         if ~isempty(crop)
