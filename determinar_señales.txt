@@ -1,0 +1,14 @@
+si open círculos:
+	- si contiene azul:
+		- si se puede hacer un close blanco con un rectángulo vertical como ee: DIR OBLIGATORIA
+	- si contiene rojo:
+		- si se puede hacer un close blanco con un rectángulo horizontal como ee: DIR PROHIBIDA
+		- si contiene negro:
+			- si tiene una raya roja diagonal: NO GIR O NO SOROLL
+			- si contiene números: VEL LÍMIT
+	-si tiene rojo y azul: NO APARCAR
+si open octágono: STOP
+si open triángulo:
+	- si contiene amarillo y negro:
+		- si contiene dibujo peatón: VIANANTS
+				

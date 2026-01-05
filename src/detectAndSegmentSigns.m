@@ -17,17 +17,24 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
     
     % Blau (Senyals d'obligació)
     maskBlue = (h > 0.55 & h < 0.75) & (s > 0.4) & (v > 0.25);
+
+    % Groc (senyals de perill / vianants)
+    % El groc està aproximadament al voltant de H ≈ 0.16 (60º)
+    % Deixem un rang una mica ample i demanem saturació i brillantor altes
+    maskYellow = (h > 0.10 & h < 0.20) & (s > 0.4) & (v > 0.4);
     
     % Unim màscares
-    maskTotal = maskRed | maskBlue;
+    maskTotal = maskRed | maskBlue | maskYellow;
     
     % 3. Neteja Morfològica
     % Eliminar soroll petit
     maskTotal = bwareaopen(maskTotal, 100); 
     % Tancar forats i suavitzar formes
-    se = strel('disk', 3);
+    se = strel('disk', 1);
     maskTotal = imclose(maskTotal, se);
     maskTotal = imfill(maskTotal, 'holes');
+
+    figure,imshow(maskTotal),title("senyals extretes")
     
     % 4. Extracció de regions (Regionprops)
     stats = regionprops(maskTotal, 'BoundingBox', 'Area', 'Eccentricity', 'Solidity');

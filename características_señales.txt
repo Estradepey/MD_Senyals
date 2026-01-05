@@ -1,0 +1,39 @@
+dir obligatoria:
+	- azules y blancas
+	- círculo
+	- flechas (con open o close con ee con forma de rectángulo alargado verticalmente debería valer para identificarla)
+dir prohibida:
+	- roja y blanca
+	- círculo
+	- rectángulo blanco alargado horizontalmente
+límite velocidad:
+	- rojo (exterior), blanco (interior) y negro (números)
+	- círculo
+	- números (10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120)
+no aparcar:
+	- rojo (circunferencia exterior y rayas diagonales) y azul (interior)
+	- círculo
+	- rayas diagonales (pueden ser una o dos)
+no girar:
+	- rojo (circunferencia exterior y raya diagonal), blanco (interior) y negro (flecha de giro)
+	- círculo
+	- flecha de dirección (empieza desde abajo y luego puede ir hacia la derecha, izquierda o hasta para la misma dirección, pero cambiando de sentido)
+no soroll:
+	- rojo (circunferencia exterior y raya diagonal), blanco (interior) y negro (dibujo trompeta)
+	- círculo
+	- dibujo trompeta
+stop:
+	- rojo y blanco (letras stop)
+	- octágono (esto es muy importante, es la única señal con forma octogonal, así que si se hace un open o close con ee octogonal y aparece la señal, entonces es 100% un stop)
+vianants:
+	- amarillo (fondo) y negro (triángulo exterior y dibujo de peatón)
+	- triangulo
+	- dibujo de peatón cruzando el paso de peatones (importante porque hay diferentes señales triangulares, pero no tienen el dibujo de un peatón)
+zona bici:
+	- azul (fondo) y blanco (dibujo bici)
+	- círculo
+	- dibujo bici
+zona coche:
+	- azul (fondo) y blanco (dibujo coche)
+	- círculo
+	- dibujo coche

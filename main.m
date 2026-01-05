@@ -5,7 +5,7 @@ clear; clc; close all;
 addpath('src'); % Afegir la carpeta de funcions al path
 
 %% 1. CONFIGURACIÓ I DADES
-datasetPath = 'E:\MATLAB\MD_Senyals\imatges_senyals';
+datasetPath = 'imatges_senyals';
 config.fourierDesc = 10;
 config.colorBins = 16;
 config.shapeFeats = 6;

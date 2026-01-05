@@ -14,5 +14,8 @@ Dataset/
 # Archivos de proyecto grandes (opcional)
 *.slxc
 
+*.jpg
+*.png
+
 # Si el modelo .mat es gigante (>100MB), ignóralo también.
 # Si es pequeño (<50MB), puedes dejarlo.
