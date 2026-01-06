@@ -6,11 +6,12 @@ addpath('src'); % Afegir la carpeta de funcions al path
 
 %% 1. CONFIGURACIÓ I DADES
 datasetPath = 'imatges_senyals';
-config.fourierDesc = 10;
+config.fourierDesc = 39;
 config.colorBins = 16;
 config.shapeFeats = 6;
 config.imgSize = 64;
 config.cellSize = 8;
+config.siftDim = 32;
 
 fprintf('Carregant dataset...\n');
 imds = imageDatastore(datasetPath, 'IncludeSubfolders', true, 'LabelSource', 'foldernames');

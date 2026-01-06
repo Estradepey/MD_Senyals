@@ -33,8 +33,6 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
     se = strel('disk', 1);
     maskTotal = imclose(maskTotal, se);
     maskTotal = imfill(maskTotal, 'holes');
-
-    figure,imshow(maskTotal),title("senyals extretes")
     
     % 4. Extracció de regions (Regionprops)
     stats = regionprops(maskTotal, 'BoundingBox', 'Area', 'Eccentricity', 'Solidity');
@@ -84,7 +82,7 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
         if isfield(config, 'imageSize')
             targetSize = config.imageSize;
         else
-            targetSize = [32 32];
+            targetSize = [64 64];
         end
         
         if ~isempty(crop)
