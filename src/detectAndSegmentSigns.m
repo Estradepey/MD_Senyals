@@ -33,8 +33,6 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
     se = strel('disk', 1);
     maskTotal = imclose(maskTotal, se);
     maskTotal = imfill(maskTotal, 'holes');
-
-    figure,imshow(maskTotal),title("senyals extretes")
     
     % 4. Extracció de regions (Regionprops)
     stats = regionprops(maskTotal, 'BoundingBox', 'Area', 'Eccentricity', 'Solidity');

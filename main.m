@@ -11,6 +11,7 @@ config.colorBins = 16;
 config.shapeFeats = 6;
 config.imgSize = 64;
 config.cellSize = 8;
+config.siftDim = 32;
 
 fprintf('Carregant dataset...\n');
 imds = imageDatastore(datasetPath, 'IncludeSubfolders', true, 'LabelSource', 'foldernames');

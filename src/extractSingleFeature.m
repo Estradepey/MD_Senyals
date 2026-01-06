@@ -9,6 +9,20 @@ function feat = extractSingleFeature(img, config)
     if isa(img, 'uint16')
         img = im2uint8(img);
     end
+
+    % Intentar segmentar el senyal dins de la imatge
+    % (tant per a imatges del dataset com per a patches d'escena)
+    try
+        [candidates, ~] = detectAndSegmentSigns(img, config);
+        if ~isempty(candidates)
+            % Fem servir el primer candidat (patch amb la senyal)
+            img = candidates{1};
+        end
+    catch
+        % Si la segmentació falla per qualsevol motiu, continuem amb la
+        % imatge original sense modificar-la.
+    end
+
     %(MIDA FIXA)
     img = imresize(img, [config.imgSize config.imgSize]);
     
@@ -16,7 +30,7 @@ function feat = extractSingleFeature(img, config)
     
     %(Vores)
     bw = edge(img_gray, 'canny', [0.1 0.3]);
-    bw = imclose(bw, strel('disk', 2));
+    bw= imclose(bw, strel('disk', 2));
     bw = imfill(bw, 'holes');
     bw = bwareaopen(bw, 30);
     
@@ -72,4 +86,36 @@ function feat = extractSingleFeature(img, config)
     
     % Afegir al vector final
     feat = [feat, hogFeat];
+
+    %% 5. SIFT (descriptors de textura local) - Reduït i normalitzat
+    siftDim = config.siftDim;  % Reduïm dimensionalitat per evitar que dominin
+    siftFeat = zeros(1, siftDim);
+
+    try
+        points = detectSIFTFeatures(img_gray);
+        if points.Count >= 2
+            [featSIFT, ~] = extractFeatures(img_gray, points);
+            featSIFT = double(featSIFT);
+            % Utilitzem la mitjana dels descriptors SIFT com a representació
+            siftFeat = mean(featSIFT, 1);
+            
+            % Normalització L2 per evitar valors massa grans
+            normVal = norm(siftFeat);
+            if normVal > 0
+                siftFeat = siftFeat / normVal;
+            end
+            
+            % Agafem només les primeres 32 dimensions
+            if numel(siftFeat) > siftDim
+                siftFeat = siftFeat(1:siftDim);
+            elseif numel(siftFeat) < siftDim
+                siftFeat = [siftFeat, zeros(1, siftDim - numel(siftFeat))];
+            end
+        end
+    catch
+        % Si SIFT falla (falta toolbox, etc.), deixem zeros
+        siftFeat = zeros(1, siftDim);
+    end
+
+    feat = [feat, siftFeat];
 end
