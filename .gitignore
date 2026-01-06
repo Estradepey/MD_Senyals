@@ -16,6 +16,7 @@ Dataset/
 
 *.jpg
 *.png
+*.jfif
 
 # Si el modelo .mat es gigante (>100MB), ignóralo también.
 # Si es pequeño (<50MB), puedes dejarlo.
