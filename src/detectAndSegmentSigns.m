@@ -16,7 +16,7 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
     maskRed = maskRed1 | maskRed2;
     
     % Blau (Senyals d'obligació)
-    maskBlue = (h > 0.55 & h < 0.75) & (s > 0.4) & (v > 0.25);
+    maskBlue = (h > 0.5 & h < 0.75) & (s > 0.4) & (v > 0.25);
 
     % Groc (senyals de perill / vianants)
     % El groc està aproximadament al voltant de H ≈ 0.16 (60º)
