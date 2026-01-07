@@ -54,17 +54,17 @@ for i = 1:numCandidates
         feat_norm = (feat - trainMu) ./ trainSigma;
         feat_norm = single(feat_norm);        feat_norm(~isfinite(feat_norm)) = 0; % Seguretat
         
-% C. Predir con SCORES (Probabilidades)
+% C. Predir amb SCORES (Probabilitats)
         [prediction, scores] = predict(finalModel, feat_norm);
         
-        % Ordenar las puntuaciones de mayor a menor
+        % Ordenar les puntuacions de major a menor
         sortedScores = sort(scores, 'descend');
         topScore = sortedScores(1);
         secondScore = sortedScores(2);
         
-        % CRITERIO DE CONFIANZA:
-        % 1. Que la probabilidad sea decente 
-        % 2. Que haya diferencia con la segunda opción 
+        % CRITERI DE CONFIANÇA:
+        % 1. Que la probabilitat sigui decent
+        % 2. Que hi hagi diferència amb la segona opció
 
         if topScore < 0.4 || (topScore - secondScore) < 0.2
             fprintf('  -> Objecte %d: NO CLASSIFICAT (Confiança: %.2f%%)\n', i, topScore*100);
@@ -73,7 +73,7 @@ for i = 1:numCandidates
         end
 
         
-        % Si pasa el filtro, dibujamos...
+        % Si passa el filtre, dibuixem...
         label = string(prediction);
         
         if label == "fons" || label == "background" 
