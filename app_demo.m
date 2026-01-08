@@ -66,7 +66,7 @@ for i = 1:numCandidates
         % 1. Que la probabilitat sigui decent
         % 2. Que hi hagi diferència amb la segona opció
 
-        if topScore < 0.4 || (topScore - secondScore) < 0.2
+        if topScore < 0.35 || (topScore - secondScore) < 0.2
             fprintf('  -> Objecte %d: NO CLASSIFICAT (Confiança: %.2f%%)\n', i, topScore*100);
             continue; % Salta a la següent iteració del bucle
         end
