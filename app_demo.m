@@ -68,7 +68,6 @@ for i = 1:numCandidates
 
         if topScore < 0.4 || (topScore - secondScore) < 0.2
             fprintf('  -> Objecte %d: NO CLASSIFICAT (Confiança: %.2f%%)\n', i, topScore*100);
-            rectangle('Position', box, 'EdgeColor', 'g', 'LineWidth', 3);
             continue; % Salta a la següent iteració del bucle
         end
 
