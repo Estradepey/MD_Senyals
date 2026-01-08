@@ -1,6 +1,4 @@
-function [X_norm, Y, mu, sigma] = extractDatasetFeatures(imds, config, mu, sigma)
-    % Versió amb DEPURACIÓ D'ERRORS
-    
+function [X_norm, Y, mu, sigma] = extractDatasetFeatures(imds, config, mu, sigma) 
     numImages = numel(imds.Files);
     
     % Fem una prova amb la primera imatge per calcular la mida real de les features
@@ -17,7 +15,6 @@ function [X_norm, Y, mu, sigma] = extractDatasetFeatures(imds, config, mu, sigma
     validMask = true(numImages, 1);
     
     % Bucle d'extracció
-    % Canviem 'parfor' a 'for' normal per veure millor els errors mentre depurem
     for i = 1:numImages 
         try
             img = readimage(imds, i);
@@ -35,7 +32,6 @@ function [X_norm, Y, mu, sigma] = extractDatasetFeatures(imds, config, mu, sigma
                 X_raw(i, :) = feat;
             end
         catch ME
-            % AQUÍ ÉS ON MOSTREM L'ERROR REAL
             fprintf(2, 'ERROR a la imatge %d: %s\n', i, ME.message);
             validMask(i) = false;
             

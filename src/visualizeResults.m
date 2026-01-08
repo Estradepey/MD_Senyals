@@ -1,13 +1,5 @@
 function visualizeResults(results, bestIdx, models, imdsTest, YTest)
-    % VISUALIZERESULTS Mostra gràfiques de rendiment i exemples
-    %
-    % Inputs:
-    %   results  - Estructura amb prediccions (.preds) i accuracy (.accs)
-    %   bestIdx  - Índex del millor model (1=SVM, 2=RF, 3=KNN)
-    %   models   - Estructura amb els noms dels models (.names)
-    %   imdsTest - ImageDatastore original (per llegir imatges)
-    %   YTest    - Etiquetes reals (ground truth)
-
+    % Mostra gràfiques de rendiment i exemples
     bestModelName = models.names{bestIdx};
     bestPreds = results.preds{bestIdx};
     bestAcc = results.accs(bestIdx);
@@ -54,8 +46,6 @@ function visualizeResults(results, bestIdx, models, imdsTest, YTest)
     sgtitle(sprintf('Mètriques per Classe - %s', bestModelName));
 
     %% 3. Exemples Visuals
-    % Nota: Això assumeix que no s'han descartat imatges al test set. 
-    % Si hi hagués diferència de mida, caldria gestionar els índexs.
     
     if numel(imdsTest.Files) == numel(YTest)
         figure('Name', 'Exemples de Predicció', 'NumberTitle', 'off', 'Position', [100 100 1200 800]);

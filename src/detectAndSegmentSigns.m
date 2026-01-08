@@ -1,15 +1,11 @@
 function [candidates, bboxes] = detectAndSegmentSigns(img, config)
-% DETECTANDSEGMENTSIGNS Detecta senyals usant Color (HSV) i Morfologia
-% Aquesta funció substitueix l'enfocament anterior per un més robust
-% per a càmeres de mòbil.
-
     % 1. Pre-processament: Convertir a HSV
     hsv = rgb2hsv(img);
     h = hsv(:,:,1); 
     s = hsv(:,:,2); 
     v = hsv(:,:,3);
     
-    % 2. Màscares de Color (Vermell i Blau)
+    % 2. Màscares de Color (Vermell, Blau i Groc)
     % Vermell (té un problema, està al principi i al final de l'espectre H)
     maskRed1 = (h > 0.94) & (s > 0.45) & (v > 0.2);
     maskRed2 = (h < 0.06) & (s > 0.45) & (v > 0.2);
@@ -18,9 +14,7 @@ function [candidates, bboxes] = detectAndSegmentSigns(img, config)
     % Blau (Senyals d'obligació)
     maskBlue = (h > 0.5 & h < 0.75) & (s > 0.4) & (v > 0.25);
 
-    % Groc (senyals de perill / vianants)
-    % El groc està aproximadament al voltant de H ≈ 0.16 (60º)
-    % Deixem un rang una mica ample i demanem saturació i brillantor altes
+    % Groc (vianants, señals d'obres)
     maskYellow = (h > 0.10 & h < 0.20) & (s > 0.4) & (v > 0.4);
     
     % Unim màscares

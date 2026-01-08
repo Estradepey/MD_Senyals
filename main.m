@@ -1,5 +1,5 @@
 % PROJECTE VISIÓ PER COMPUTADOR - DETECCIÓ DE SENYALS
-% Fitxer principal (Main)
+% Fitxer Trainingt
 
 clear; clc; close all;
 addpath('src'); % Afegir la carpeta de funcions al path

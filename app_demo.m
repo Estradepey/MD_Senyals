@@ -1,6 +1,6 @@
 % APP DE DEMOSTRACIÓ - DETECCIÓ DE SENYALS EN ESCENA COMPLETA
-% 1. Detecta zones d'interès (segmentació + patching)
-% 2. Classifica cada zona (model ML)
+% 1. Detecta zones d'interès (segmentació)
+% 2. Classifica cada zona
 
 clear; clc; close all;
 addpath('src'); 
@@ -22,7 +22,7 @@ if isequal(file, 0), return; end
 fullPath = fullfile(path, file);
 img = imread(fullPath);
 
-%% 3. FASE 1: Detecció i Patching
+%% 3. FASE 1: Detecció
 fprintf('Escanejant la imatge...\n');
 
 [candidates, bboxes] = detectAndSegmentSigns(img, config);
@@ -50,11 +50,11 @@ for i = 1:numCandidates
         % A. Extreure característiques
         feat = extractSingleFeature(patch, config);
         
-        % B. Normalitzar (IMP: Usar mu/sigma del training)
+        % B. Normalitzar
         feat_norm = (feat - trainMu) ./ trainSigma;
         feat_norm = single(feat_norm);        feat_norm(~isfinite(feat_norm)) = 0; % Seguretat
         
-% C. Predir amb SCORES (Probabilitats)
+        % C. Predir amb SCORES (Probabilitats)
         [prediction, scores] = predict(finalModel, feat_norm);
         
         % Ordenar les puntuacions de major a menor
@@ -75,7 +75,7 @@ for i = 1:numCandidates
         % Si passa el filtre, dibuixem...
         label = string(prediction);
         
-        if label == "fons" || label == "background" 
+        if label == "fons"
             fprintf('  -> Objecte %d: Ignorat (Classificat com fons)\n', i);
             continue; % Salta a la siguiente iteración del bucle
         end
